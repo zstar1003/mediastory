@@ -136,7 +136,7 @@ function App() {
             <div className="flex items-center gap-4">
               <button
                 onClick={handleBackToHome}
-                className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity"
+                className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
               >
                 <Film className="w-6 h-6 text-primary" />
                 闪电分镜
@@ -157,7 +157,7 @@ function App() {
                   ) : (
                     <button
                       onClick={() => setEditingName(true)}
-                      className="text-foreground hover:text-primary flex items-center gap-1 transition-colors font-medium"
+                      className="text-foreground hover:text-primary flex items-center gap-1 transition-colors font-medium cursor-pointer"
                     >
                       {currentProject.name}
                       <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -211,7 +211,7 @@ function App() {
                 <h2 className="text-2xl font-bold">我的项目</h2>
                 <p className="text-muted-foreground mt-1">选择一个项目继续编辑，或创建新项目</p>
               </div>
-              <Button onClick={() => setShowNewProjectDialog(true)}>
+              <Button onClick={() => setShowNewProjectDialog(true)} className="cursor-pointer">
                 <Plus className="h-4 w-4 mr-2" />
                 新建项目
               </Button>
@@ -223,7 +223,7 @@ function App() {
                   <Film className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                   <h3 className="text-xl font-medium mb-2">还没有项目</h3>
                   <p className="text-muted-foreground mb-6">创建您的第一个分镜项目开始创作</p>
-                  <Button onClick={() => setShowNewProjectDialog(true)}>
+                  <Button onClick={() => setShowNewProjectDialog(true)} className="cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     创建新项目
                   </Button>
@@ -287,10 +287,10 @@ function App() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewProjectDialog(false)}>
+            <Button variant="outline" onClick={() => setShowNewProjectDialog(false)} className="cursor-pointer">
               取消
             </Button>
-            <Button onClick={handleCreateProject} disabled={!newProjectName.trim()}>
+            <Button onClick={handleCreateProject} disabled={!newProjectName.trim()} className="cursor-pointer">
               创建
             </Button>
           </DialogFooter>
@@ -307,10 +307,10 @@ function App() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="cursor-pointer">
               取消
             </Button>
-            <Button variant="destructive" onClick={handleDeleteProject}>
+            <Button variant="destructive" onClick={handleDeleteProject} className="cursor-pointer">
               删除
             </Button>
           </DialogFooter>

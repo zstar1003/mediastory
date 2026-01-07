@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { useStoryboardStore } from '@/stores/storyboardStore';
 import { SHOT_SIZES, CAMERA_MOVEMENTS } from '@/types';
 import type { Storyboard, ShotSize, CameraMovement } from '@/types';
@@ -28,13 +28,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Copy, Trash2, Plus } from 'lucide-react';
 
 interface StoryboardRowProps {
   storyboard: Storyboard;
   index: number;
   onUpdate: (id: string, updates: Partial<Storyboard>) => void;
-  onDelete: (id: string) => void;
+  onDeleteClick: (id: string) => void;
   onDuplicate: (id: string) => void;
   onPreview: (image: string) => void;
 }
@@ -43,7 +51,7 @@ const StoryboardRow = ({
   storyboard,
   index,
   onUpdate,
-  onDelete,
+  onDeleteClick,
   onDuplicate,
   onPreview,
 }: StoryboardRowProps) => {
@@ -54,18 +62,8 @@ const StoryboardRow = ({
         {index + 1}
       </TableCell>
 
-      {/* 镜头号 */}
-      <TableCell className="w-20">
-        <Input
-          value={storyboard.shotNumber}
-          onChange={(e) => onUpdate(storyboard.id, { shotNumber: e.target.value })}
-          placeholder="镜头"
-          className="text-center h-8"
-        />
-      </TableCell>
-
       {/* 参考图片 */}
-      <TableCell className="w-40">
+      <TableCell className="w-48">
         <ImageCell
           value={storyboard.imageData}
           onChange={(v) => onUpdate(storyboard.id, { imageData: v })}
@@ -79,7 +77,7 @@ const StoryboardRow = ({
           value={storyboard.description}
           onChange={(e) => onUpdate(storyboard.id, { description: e.target.value })}
           placeholder="描述画面内容..."
-          className="min-h-[80px] resize-none"
+          className="min-h-[100px] resize-none"
         />
       </TableCell>
 
@@ -89,7 +87,7 @@ const StoryboardRow = ({
           value={storyboard.dialogue}
           onChange={(e) => onUpdate(storyboard.id, { dialogue: e.target.value })}
           placeholder="对白或旁白..."
-          className="min-h-[80px] resize-none"
+          className="min-h-[100px] resize-none"
         />
       </TableCell>
 
@@ -153,7 +151,7 @@ const StoryboardRow = ({
       </TableCell>
 
       {/* 视频 */}
-      <TableCell className="w-40">
+      <TableCell className="w-48">
         <VideoCell
           value={storyboard.videoData}
           onChange={(v) => onUpdate(storyboard.id, { videoData: v })}
@@ -169,7 +167,7 @@ const StoryboardRow = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
                   onClick={() => onDuplicate(storyboard.id)}
                 >
                   <Copy className="h-4 w-4" />
@@ -183,8 +181,8 @@ const StoryboardRow = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => onDelete(storyboard.id)}
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  onClick={() => onDeleteClick(storyboard.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -208,6 +206,22 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
     setPreviewImage,
   } = useStoryboardStore();
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [storyboardToDelete, setStoryboardToDelete] = useState<string | null>(null);
+
+  const handleDeleteClick = (id: string) => {
+    setStoryboardToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (storyboardToDelete) {
+      deleteStoryboard(storyboardToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setStoryboardToDelete(null);
+  };
+
   if (!currentProject) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -219,61 +233,82 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
   const storyboards = currentProject.storyboards;
 
   return (
-    <div ref={ref} className="bg-card rounded-lg border shadow-sm overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="w-14 text-center">#</TableHead>
-            <TableHead className="w-20">镜头</TableHead>
-            <TableHead className="w-40">参考图</TableHead>
-            <TableHead className="min-w-[280px]">画面描述</TableHead>
-            <TableHead className="min-w-[200px]">对白/旁白</TableHead>
-            <TableHead className="w-28">景别</TableHead>
-            <TableHead className="w-28">运镜</TableHead>
-            <TableHead className="w-20">时长</TableHead>
-            <TableHead className="min-w-[120px]">备注</TableHead>
-            <TableHead className="w-40">视频</TableHead>
-            <TableHead className="w-20 text-center">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {storyboards.map((sb, index) => (
-            <StoryboardRow
-              key={sb.id}
-              storyboard={sb}
-              index={index}
-              onUpdate={updateStoryboard}
-              onDelete={deleteStoryboard}
-              onDuplicate={duplicateStoryboard}
-              onPreview={setPreviewImage}
-            />
-          ))}
-        </TableBody>
-      </Table>
+    <>
+      <div ref={ref} className="bg-card rounded-lg border shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-14 text-center">#</TableHead>
+              <TableHead className="w-48">参考图</TableHead>
+              <TableHead className="min-w-[280px]">画面描述</TableHead>
+              <TableHead className="min-w-[200px]">对白/旁白</TableHead>
+              <TableHead className="w-28">景别</TableHead>
+              <TableHead className="w-28">运镜</TableHead>
+              <TableHead className="w-20">时长</TableHead>
+              <TableHead className="min-w-[120px]">备注</TableHead>
+              <TableHead className="w-48">视频</TableHead>
+              <TableHead className="w-20 text-center">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {storyboards.map((sb, index) => (
+              <StoryboardRow
+                key={sb.id}
+                storyboard={sb}
+                index={index}
+                onUpdate={updateStoryboard}
+                onDeleteClick={handleDeleteClick}
+                onDuplicate={duplicateStoryboard}
+                onPreview={setPreviewImage}
+              />
+            ))}
+          </TableBody>
+        </Table>
 
-      {storyboards.length === 0 && (
-        <div className="p-8 text-center text-muted-foreground">
-          <p className="mb-4">暂无分镜，点击下方按钮添加第一个分镜</p>
-          <Button onClick={() => addStoryboard()}>
-            <Plus className="h-4 w-4 mr-2" />
-            添加分镜
-          </Button>
-        </div>
-      )}
+        {storyboards.length === 0 && (
+          <div className="p-8 text-center text-muted-foreground">
+            <p className="mb-4">暂无分镜，点击下方按钮添加第一个分镜</p>
+            <Button onClick={() => addStoryboard()} className="cursor-pointer">
+              <Plus className="h-4 w-4 mr-2" />
+              添加分镜
+            </Button>
+          </div>
+        )}
 
-      {storyboards.length > 0 && (
-        <div className="p-4 border-t bg-muted/30">
-          <Button
-            variant="outline"
-            className="w-full border-dashed"
-            onClick={() => addStoryboard()}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            添加新分镜
-          </Button>
-        </div>
-      )}
-    </div>
+        {storyboards.length > 0 && (
+          <div className="p-4 border-t bg-muted/30">
+            <Button
+              variant="outline"
+              className="w-full border-dashed cursor-pointer"
+              onClick={() => addStoryboard()}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              添加新分镜
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* 删除确认对话框 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>删除分镜</DialogTitle>
+            <DialogDescription>
+              确定要删除第 {storyboardToDelete ? storyboards.findIndex(s => s.id === storyboardToDelete) + 1 : ''} 个分镜吗？此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="cursor-pointer">
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} className="cursor-pointer">
+              删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 });
 

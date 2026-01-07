@@ -78,7 +78,7 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
   return (
     <div
       className={cn(
-        "relative w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all",
+        "relative w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all",
         isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
         value && "border-solid border-border"
       )}
