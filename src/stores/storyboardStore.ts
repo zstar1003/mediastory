@@ -161,7 +161,7 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
     const { currentProject } = get();
     if (currentProject) {
       await saveProject(currentProject);
-      await get().loadProjects();
+      // 不再每次保存都刷新项目列表，避免界面闪烁
     }
   },
 }));

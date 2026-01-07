@@ -100,6 +100,7 @@ function App() {
       await save();
     }
     setCurrentProject(null);
+    await loadProjects(); // 返回主页时刷新项目列表
   };
 
   const handleNameBlur = () => {
