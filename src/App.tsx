@@ -6,28 +6,23 @@ import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Project } from '@/types';
 import {
   Film,
-  FolderOpen,
   Plus,
   Trash2,
-  ChevronDown,
   Pencil,
+  Clock,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
 
 function App() {
@@ -43,10 +38,12 @@ function App() {
     deleteCurrentProject,
     save,
     setPreviewImage,
+    setCurrentProject,
   } = useStoryboardStore();
 
   const tableRef = useRef<HTMLDivElement>(null);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -94,9 +91,15 @@ function App() {
   };
 
   const handleDeleteProject = async () => {
-    if (confirm('确定要删除当前项目吗？此操作不可撤销。')) {
-      await deleteCurrentProject();
+    await deleteCurrentProject();
+    setShowDeleteDialog(false);
+  };
+
+  const handleBackToHome = async () => {
+    if (currentProject) {
+      await save();
     }
+    setCurrentProject(null);
   };
 
   const handleNameBlur = () => {
@@ -104,6 +107,14 @@ function App() {
     if (projectName !== currentProject?.name) {
       updateProjectName(projectName);
     }
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   if (isLoading) {
@@ -122,13 +133,17 @@ function App() {
           <div className="flex items-center justify-between">
             {/* 左侧：Logo 和项目名 */}
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold flex items-center gap-2">
+              <button
+                onClick={handleBackToHome}
+                className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
                 <Film className="w-6 h-6 text-primary" />
                 闪电分镜
-              </h1>
+              </button>
 
               {currentProject && (
                 <div className="flex items-center gap-2 ml-4 pl-4 border-l">
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   {editingName ? (
                     <Input
                       value={projectName}
@@ -141,10 +156,10 @@ function App() {
                   ) : (
                     <button
                       onClick={() => setEditingName(true)}
-                      className="text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                      className="text-foreground hover:text-primary flex items-center gap-1 transition-colors font-medium"
                     >
                       {currentProject.name}
-                      <Pencil className="h-3 w-3" />
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
                 </div>
@@ -153,54 +168,18 @@ function App() {
 
             {/* 右侧：操作按钮 */}
             <div className="flex items-center gap-3">
-              {currentProject && <ExportButtons tableRef={tableRef} />}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    项目
-                    <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuItem onClick={() => setShowNewProjectDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    新建项目
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {projects.length === 0 ? (
-                    <div className="p-2 text-center text-muted-foreground text-sm">
-                      暂无项目
-                    </div>
-                  ) : (
-                    projects.map((project) => (
-                      <DropdownMenuItem
-                        key={project.id}
-                        onClick={() => handleSelectProject(project)}
-                        className={currentProject?.id === project.id ? 'bg-accent' : ''}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="truncate">{project.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {project.storyboards.length} 个分镜
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               {currentProject && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDeleteProject}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <>
+                  <ExportButtons tableRef={tableRef} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -224,17 +203,70 @@ function App() {
             <StoryboardTable ref={tableRef} />
           </>
         ) : (
-          <Card className="max-w-md mx-auto mt-20">
-            <CardContent className="p-12 text-center">
-              <Film className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h2 className="text-xl font-medium mb-2">欢迎使用闪电分镜</h2>
-              <p className="text-muted-foreground mb-6">快速创建和管理您的分镜脚本</p>
+          /* 主页：项目列表 */
+          <div className="py-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold">我的项目</h2>
+                <p className="text-muted-foreground mt-1">选择一个项目继续编辑，或创建新项目</p>
+              </div>
               <Button onClick={() => setShowNewProjectDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                创建新项目
+                新建项目
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+
+            {projects.length === 0 ? (
+              <Card className="max-w-md mx-auto mt-12">
+                <CardContent className="p-12 text-center">
+                  <Film className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-xl font-medium mb-2">还没有项目</h3>
+                  <p className="text-muted-foreground mb-6">创建您的第一个分镜项目开始创作</p>
+                  <Button onClick={() => setShowNewProjectDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    创建新项目
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {projects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className="cursor-pointer hover:shadow-md hover:border-primary/50 transition-all"
+                    onClick={() => handleSelectProject(project)}
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg truncate">{project.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Layers className="h-4 w-4" />
+                          <span>{project.storyboards.length} 个分镜</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{formatDate(project.updatedAt)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* 新建项目卡片 */}
+                <Card
+                  className="cursor-pointer border-dashed hover:border-primary/50 hover:bg-muted/50 transition-all"
+                  onClick={() => setShowNewProjectDialog(true)}
+                >
+                  <CardContent className="flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground">
+                    <Plus className="h-8 w-8 mb-2" />
+                    <span>新建项目</span>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
@@ -259,6 +291,26 @@ function App() {
             </Button>
             <Button onClick={handleCreateProject} disabled={!newProjectName.trim()}>
               创建
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认对话框 */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>删除项目</DialogTitle>
+            <DialogDescription>
+              确定要删除项目 "{currentProject?.name}" 吗？此操作不可撤销，所有分镜数据将被永久删除。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProject}>
+              删除
             </Button>
           </DialogFooter>
         </DialogContent>

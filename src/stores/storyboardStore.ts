@@ -27,6 +27,9 @@ interface StoryboardStore {
   // 图片预览
   setPreviewImage: (image: string | null) => void;
 
+  // 设置当前项目
+  setCurrentProject: (project: Project | null) => void;
+
   // 保存
   save: () => Promise<void>;
 }
@@ -148,6 +151,10 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
 
   setPreviewImage: (image: string | null) => {
     set({ previewImage: image });
+  },
+
+  setCurrentProject: (project: Project | null) => {
+    set({ currentProject: project });
   },
 
   save: async () => {
