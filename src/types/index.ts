@@ -7,7 +7,6 @@ export type CameraMovement = '固定' | '推' | '拉' | '摇' | '移' | '跟' | 
 // 单个分镜数据
 export interface Storyboard {
   id: string;
-  sceneNumber: string;      // 场景号
   shotNumber: string;       // 镜头号
   imageData?: string;       // 图片数据 (base64)
   description: string;      // 画面描述
@@ -16,6 +15,7 @@ export interface Storyboard {
   cameraMovement: CameraMovement | '';  // 运镜
   duration: number;         // 时长(秒)
   notes: string;            // 备注
+  videoData?: string;       // 视频数据 (base64)
 }
 
 // 项目数据
@@ -28,9 +28,8 @@ export interface Project {
 }
 
 // 创建新分镜的默认值
-export const createEmptyStoryboard = (sceneNumber = '1', shotNumber = '1'): Storyboard => ({
+export const createEmptyStoryboard = (shotNumber = '1'): Storyboard => ({
   id: crypto.randomUUID(),
-  sceneNumber,
   shotNumber,
   imageData: undefined,
   description: '',
@@ -39,6 +38,7 @@ export const createEmptyStoryboard = (sceneNumber = '1', shotNumber = '1'): Stor
   cameraMovement: '',
   duration: 0,
   notes: '',
+  videoData: undefined,
 });
 
 // 常量

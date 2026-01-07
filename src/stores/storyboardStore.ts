@@ -86,16 +86,14 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
     const storyboards = [...currentProject.storyboards];
     const insertIndex = index !== undefined ? index + 1 : storyboards.length;
 
-    // 自动计算场景号和镜头号
-    let sceneNumber = '1';
+    // 自动计算镜头号
     let shotNumber = '1';
     if (storyboards.length > 0) {
       const prevBoard = storyboards[insertIndex - 1] || storyboards[storyboards.length - 1];
-      sceneNumber = prevBoard.sceneNumber || '1';
       shotNumber = String(parseInt(prevBoard.shotNumber || '0') + 1);
     }
 
-    const newBoard = createEmptyStoryboard(sceneNumber, shotNumber);
+    const newBoard = createEmptyStoryboard(shotNumber);
     storyboards.splice(insertIndex, 0, newBoard);
 
     set({ currentProject: { ...currentProject, storyboards } });

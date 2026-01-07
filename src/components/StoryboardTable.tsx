@@ -3,6 +3,7 @@ import { useStoryboardStore } from '@/stores/storyboardStore';
 import { SHOT_SIZES, CAMERA_MOVEMENTS } from '@/types';
 import type { Storyboard, ShotSize, CameraMovement } from '@/types';
 import { ImageCell } from './ImageCell';
+import { VideoCell } from './VideoCell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,7 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Plus, Copy, Trash2 } from 'lucide-react';
+import { Copy, Trash2, Plus } from 'lucide-react';
 
 interface StoryboardRowProps {
   storyboard: Storyboard;
@@ -35,7 +36,6 @@ interface StoryboardRowProps {
   onUpdate: (id: string, updates: Partial<Storyboard>) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
-  onAddAfter: (index: number) => void;
   onPreview: (image: string) => void;
 }
 
@@ -45,24 +45,13 @@ const StoryboardRow = ({
   onUpdate,
   onDelete,
   onDuplicate,
-  onAddAfter,
   onPreview,
 }: StoryboardRowProps) => {
   return (
     <TableRow>
       {/* 序号 */}
-      <TableCell className="text-center font-medium text-muted-foreground w-12">
+      <TableCell className="text-center font-medium text-muted-foreground w-14">
         {index + 1}
-      </TableCell>
-
-      {/* 场景号 */}
-      <TableCell className="w-20">
-        <Input
-          value={storyboard.sceneNumber}
-          onChange={(e) => onUpdate(storyboard.id, { sceneNumber: e.target.value })}
-          placeholder="场景"
-          className="text-center h-8"
-        />
       </TableCell>
 
       {/* 镜头号 */}
@@ -76,7 +65,7 @@ const StoryboardRow = ({
       </TableCell>
 
       {/* 参考图片 */}
-      <TableCell className="w-36">
+      <TableCell className="w-40">
         <ImageCell
           value={storyboard.imageData}
           onChange={(v) => onUpdate(storyboard.id, { imageData: v })}
@@ -85,7 +74,7 @@ const StoryboardRow = ({
       </TableCell>
 
       {/* 画面描述 */}
-      <TableCell className="min-w-[200px]">
+      <TableCell className="min-w-[280px]">
         <Textarea
           value={storyboard.description}
           onChange={(e) => onUpdate(storyboard.id, { description: e.target.value })}
@@ -95,7 +84,7 @@ const StoryboardRow = ({
       </TableCell>
 
       {/* 对白/旁白 */}
-      <TableCell className="min-w-[150px]">
+      <TableCell className="min-w-[200px]">
         <Textarea
           value={storyboard.dialogue}
           onChange={(e) => onUpdate(storyboard.id, { dialogue: e.target.value })}
@@ -154,7 +143,7 @@ const StoryboardRow = ({
       </TableCell>
 
       {/* 备注 */}
-      <TableCell className="min-w-[100px]">
+      <TableCell className="min-w-[120px]">
         <Input
           value={storyboard.notes}
           onChange={(e) => onUpdate(storyboard.id, { notes: e.target.value })}
@@ -163,24 +152,18 @@ const StoryboardRow = ({
         />
       </TableCell>
 
+      {/* 视频 */}
+      <TableCell className="w-40">
+        <VideoCell
+          value={storyboard.videoData}
+          onChange={(v) => onUpdate(storyboard.id, { videoData: v })}
+        />
+      </TableCell>
+
       {/* 操作 */}
-      <TableCell className="w-28">
+      <TableCell className="w-20">
         <TooltipProvider>
           <div className="flex items-center justify-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                  onClick={() => onAddAfter(index)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>在下方添加行</TooltipContent>
-            </Tooltip>
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -240,17 +223,17 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-12 text-center">#</TableHead>
-            <TableHead className="w-20">场景</TableHead>
+            <TableHead className="w-14 text-center">#</TableHead>
             <TableHead className="w-20">镜头</TableHead>
-            <TableHead className="w-36">参考图</TableHead>
-            <TableHead className="min-w-[200px]">画面描述</TableHead>
-            <TableHead className="min-w-[150px]">对白/旁白</TableHead>
+            <TableHead className="w-40">参考图</TableHead>
+            <TableHead className="min-w-[280px]">画面描述</TableHead>
+            <TableHead className="min-w-[200px]">对白/旁白</TableHead>
             <TableHead className="w-28">景别</TableHead>
             <TableHead className="w-28">运镜</TableHead>
             <TableHead className="w-20">时长</TableHead>
-            <TableHead className="min-w-[100px]">备注</TableHead>
-            <TableHead className="w-28 text-center">操作</TableHead>
+            <TableHead className="min-w-[120px]">备注</TableHead>
+            <TableHead className="w-40">视频</TableHead>
+            <TableHead className="w-20 text-center">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -262,7 +245,6 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
               onUpdate={updateStoryboard}
               onDelete={deleteStoryboard}
               onDuplicate={duplicateStoryboard}
-              onAddAfter={addStoryboard}
               onPreview={setPreviewImage}
             />
           ))}

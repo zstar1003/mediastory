@@ -118,7 +118,7 @@ function App() {
     <div className="min-h-screen bg-muted/30">
       {/* 顶部导航 */}
       <header className="bg-background border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-[1600px] mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             {/* 左侧：Logo 和项目名 */}
             <div className="flex items-center gap-4">
@@ -208,7 +208,7 @@ function App() {
       </header>
 
       {/* 主内容区 */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-[1600px] mx-auto px-4 py-6">
         {currentProject ? (
           <>
             {/* 统计信息 */}
