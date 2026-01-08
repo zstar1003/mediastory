@@ -1,19 +1,10 @@
 import { forwardRef, useState } from 'react';
 import { useStoryboardStore } from '@/stores/storyboardStore';
-import { SHOT_SIZES, CAMERA_MOVEMENTS } from '@/types';
-import type { Storyboard, ShotSize, CameraMovement } from '@/types';
+import type { Storyboard } from '@/types';
 import { ImageCell } from './ImageCell';
 import { VideoCell } from './VideoCell';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -36,34 +27,62 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Copy, Trash2, Plus } from 'lucide-react';
+import { Copy, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface StoryboardRowProps {
   storyboard: Storyboard;
   index: number;
+  totalCount: number;
   onUpdate: (id: string, updates: Partial<Storyboard>) => void;
   onDeleteClick: (id: string) => void;
   onDuplicate: (id: string) => void;
   onPreview: (image: string) => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
 }
 
 const StoryboardRow = ({
   storyboard,
   index,
+  totalCount,
   onUpdate,
   onDeleteClick,
   onDuplicate,
   onPreview,
+  onMoveUp,
+  onMoveDown,
 }: StoryboardRowProps) => {
   return (
     <TableRow>
-      {/* 序号 */}
-      <TableCell className="text-center font-medium text-muted-foreground w-14">
-        {index + 1}
+      {/* 序号 - 可拖拽排序 */}
+      <TableCell className="text-center font-medium text-muted-foreground w-20">
+        <div className="flex items-center justify-center gap-1">
+          <div className="flex flex-col">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 cursor-pointer disabled:opacity-30"
+              onClick={() => onMoveUp(index)}
+              disabled={index === 0}
+            >
+              <ChevronUp className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 cursor-pointer disabled:opacity-30"
+              onClick={() => onMoveDown(index)}
+              disabled={index === totalCount - 1}
+            >
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </div>
+          <span className="text-lg">{index + 1}</span>
+        </div>
       </TableCell>
 
-      {/* 参考图片 */}
-      <TableCell className="w-48">
+      {/* 参考图片 - 更大的显示区域 */}
+      <TableCell className="w-64">
         <ImageCell
           value={storyboard.imageData}
           onChange={(v) => onUpdate(storyboard.id, { imageData: v })}
@@ -77,7 +96,7 @@ const StoryboardRow = ({
           value={storyboard.description}
           onChange={(e) => onUpdate(storyboard.id, { description: e.target.value })}
           placeholder="描述画面内容..."
-          className="min-h-[100px] resize-none"
+          className="min-h-[120px] resize-none"
         />
       </TableCell>
 
@@ -87,74 +106,25 @@ const StoryboardRow = ({
           value={storyboard.dialogue}
           onChange={(e) => onUpdate(storyboard.id, { dialogue: e.target.value })}
           placeholder="对白或旁白..."
-          className="min-h-[100px] resize-none"
+          className="min-h-[120px] resize-none"
         />
       </TableCell>
 
-      {/* 景别 */}
-      <TableCell className="w-28">
-        <Select
-          value={storyboard.shotSize || undefined}
-          onValueChange={(v) => onUpdate(storyboard.id, { shotSize: v as ShotSize })}
-        >
-          <SelectTrigger className="h-8">
-            <SelectValue placeholder="景别" />
-          </SelectTrigger>
-          <SelectContent>
-            {SHOT_SIZES.map((size) => (
-              <SelectItem key={size} value={size}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </TableCell>
-
-      {/* 运镜 */}
-      <TableCell className="w-28">
-        <Select
-          value={storyboard.cameraMovement || undefined}
-          onValueChange={(v) => onUpdate(storyboard.id, { cameraMovement: v as CameraMovement })}
-        >
-          <SelectTrigger className="h-8">
-            <SelectValue placeholder="运镜" />
-          </SelectTrigger>
-          <SelectContent>
-            {CAMERA_MOVEMENTS.map((movement) => (
-              <SelectItem key={movement} value={movement}>
-                {movement}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </TableCell>
-
-      {/* 时长 */}
-      <TableCell className="w-20">
-        <Input
-          type="number"
-          value={storyboard.duration || ''}
-          onChange={(e) => onUpdate(storyboard.id, { duration: parseFloat(e.target.value) || 0 })}
-          placeholder="秒"
-          className="text-center h-8"
-        />
-      </TableCell>
-
-      {/* 备注 */}
-      <TableCell className="min-w-[120px]">
-        <Input
-          value={storyboard.notes}
-          onChange={(e) => onUpdate(storyboard.id, { notes: e.target.value })}
-          placeholder="备注..."
-          className="h-8"
-        />
-      </TableCell>
-
-      {/* 视频 */}
-      <TableCell className="w-48">
+      {/* 视频 - 更大的显示区域 */}
+      <TableCell className="w-64">
         <VideoCell
           value={storyboard.videoData}
           onChange={(v) => onUpdate(storyboard.id, { videoData: v })}
+        />
+      </TableCell>
+
+      {/* 备注 - 移到视频后面 */}
+      <TableCell className="min-w-[150px]">
+        <Textarea
+          value={storyboard.notes}
+          onChange={(e) => onUpdate(storyboard.id, { notes: e.target.value })}
+          placeholder="备注..."
+          className="min-h-[120px] resize-none"
         />
       </TableCell>
 
@@ -203,6 +173,7 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
     deleteStoryboard,
     duplicateStoryboard,
     addStoryboard,
+    moveStoryboard,
     setPreviewImage,
   } = useStoryboardStore();
 
@@ -222,6 +193,18 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
     setStoryboardToDelete(null);
   };
 
+  const handleMoveUp = (index: number) => {
+    if (index > 0) {
+      moveStoryboard(index, index - 1);
+    }
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (currentProject && index < currentProject.storyboards.length - 1) {
+      moveStoryboard(index, index + 1);
+    }
+  };
+
   if (!currentProject) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -238,15 +221,12 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-14 text-center">#</TableHead>
-              <TableHead className="w-48">参考图</TableHead>
+              <TableHead className="w-20 text-center">序号</TableHead>
+              <TableHead className="w-64">参考图</TableHead>
               <TableHead className="min-w-[280px]">画面描述</TableHead>
               <TableHead className="min-w-[200px]">对白/旁白</TableHead>
-              <TableHead className="w-28">景别</TableHead>
-              <TableHead className="w-28">运镜</TableHead>
-              <TableHead className="w-20">时长</TableHead>
-              <TableHead className="min-w-[120px]">备注</TableHead>
-              <TableHead className="w-48">视频</TableHead>
+              <TableHead className="w-64">视频</TableHead>
+              <TableHead className="min-w-[150px]">备注</TableHead>
               <TableHead className="w-20 text-center">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -256,10 +236,13 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
                 key={sb.id}
                 storyboard={sb}
                 index={index}
+                totalCount={storyboards.length}
                 onUpdate={updateStoryboard}
                 onDeleteClick={handleDeleteClick}
                 onDuplicate={duplicateStoryboard}
                 onPreview={setPreviewImage}
+                onMoveUp={handleMoveUp}
+                onMoveDown={handleMoveDown}
               />
             ))}
           </TableBody>
