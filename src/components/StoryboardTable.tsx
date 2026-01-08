@@ -39,6 +39,7 @@ interface StoryboardRowProps {
   onPreview: (image: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  onAddBelow: (index: number) => void;
 }
 
 const StoryboardRow = ({
@@ -51,6 +52,7 @@ const StoryboardRow = ({
   onPreview,
   onMoveUp,
   onMoveDown,
+  onAddBelow,
 }: StoryboardRowProps) => {
   return (
     <TableRow>
@@ -129,9 +131,23 @@ const StoryboardRow = ({
       </TableCell>
 
       {/* 操作 */}
-      <TableCell className="w-20">
+      <TableCell className="w-24">
         <TooltipProvider>
           <div className="flex items-center justify-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer"
+                  onClick={() => onAddBelow(index)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>在下方添加分镜</TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -227,7 +243,7 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
               <TableHead className="min-w-[200px]">对白/旁白</TableHead>
               <TableHead className="w-64">视频</TableHead>
               <TableHead className="min-w-[150px]">备注</TableHead>
-              <TableHead className="w-20 text-center">操作</TableHead>
+              <TableHead className="w-24 text-center">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -243,6 +259,7 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
                 onPreview={setPreviewImage}
                 onMoveUp={handleMoveUp}
                 onMoveDown={handleMoveDown}
+                onAddBelow={(idx) => addStoryboard(idx)}
               />
             ))}
           </TableBody>
