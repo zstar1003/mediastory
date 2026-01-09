@@ -133,7 +133,7 @@ function App() {
       {/* 顶部导航 */}
       <header className="bg-background border-b sticky top-0 z-40">
         <div className="max-w-[1600px] mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between h-10">
             {/* 左侧：Logo 和项目名 */}
             <div className="flex items-center gap-4">
               <button
@@ -141,7 +141,7 @@ function App() {
                 className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
               >
                 <Film className="w-6 h-6 text-primary" />
-                闪电分镜
+                极速分镜
               </button>
 
               {currentProject && (
