@@ -145,7 +145,7 @@ function App() {
               </button>
 
               {currentProject && (
-                <div className="flex items-center gap-2 ml-4 pl-4 border-l">
+                <div className="flex items-center gap-2 pl-4 border-l">
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   {editingName ? (
                     <Input
@@ -170,7 +170,7 @@ function App() {
             </div>
 
             {/* 右侧：操作按钮 */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               {currentProject && (
                 <>
                   <ExportButtons tableRef={tableRef} />
