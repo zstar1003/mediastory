@@ -27,58 +27,49 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Copy, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { Copy, Trash2, Plus, GripVertical } from 'lucide-react';
 
 interface StoryboardRowProps {
   storyboard: Storyboard;
   index: number;
-  totalCount: number;
   onUpdate: (id: string, updates: Partial<Storyboard>) => void;
   onDeleteClick: (id: string) => void;
   onDuplicate: (id: string) => void;
   onPreview: (image: string) => void;
-  onMoveUp: (index: number) => void;
-  onMoveDown: (index: number) => void;
   onAddBelow: (index: number) => void;
+  onDragStart: (index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDragEnd: () => void;
+  isDragging: boolean;
+  isDragOver: boolean;
 }
 
 const StoryboardRow = ({
   storyboard,
   index,
-  totalCount,
   onUpdate,
   onDeleteClick,
   onDuplicate,
   onPreview,
-  onMoveUp,
-  onMoveDown,
   onAddBelow,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  isDragging,
+  isDragOver,
 }: StoryboardRowProps) => {
   return (
-    <TableRow>
-      {/* 序号 - 可拖拽排序 */}
+    <TableRow
+      className={`${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDragEnd={onDragEnd}
+    >
+      {/* 序号 - 拖拽手柄 */}
       <TableCell className="text-center font-medium text-muted-foreground w-20">
-        <div className="flex items-center justify-center gap-1">
-          <div className="flex flex-col">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 cursor-pointer disabled:opacity-30"
-              onClick={() => onMoveUp(index)}
-              disabled={index === 0}
-            >
-              <ChevronUp className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 cursor-pointer disabled:opacity-30"
-              onClick={() => onMoveDown(index)}
-              disabled={index === totalCount - 1}
-            >
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </div>
+        <div className="flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing">
+          <GripVertical className="h-4 w-4 text-gray-400" />
           <span className="text-lg">{index + 1}</span>
         </div>
       </TableCell>
@@ -195,6 +186,8 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [storyboardToDelete, setStoryboardToDelete] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleDeleteClick = (id: string) => {
     setStoryboardToDelete(id);
@@ -209,16 +202,23 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
     setStoryboardToDelete(null);
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index > 0) {
-      moveStoryboard(index, index - 1);
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndex !== null && dragIndex !== index) {
+      setDragOverIndex(index);
     }
   };
 
-  const handleMoveDown = (index: number) => {
-    if (currentProject && index < currentProject.storyboards.length - 1) {
-      moveStoryboard(index, index + 1);
+  const handleDragEnd = () => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      moveStoryboard(dragIndex, dragOverIndex);
     }
+    setDragIndex(null);
+    setDragOverIndex(null);
   };
 
   if (!currentProject) {
@@ -252,14 +252,16 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
                 key={sb.id}
                 storyboard={sb}
                 index={index}
-                totalCount={storyboards.length}
                 onUpdate={updateStoryboard}
                 onDeleteClick={handleDeleteClick}
                 onDuplicate={duplicateStoryboard}
                 onPreview={setPreviewImage}
-                onMoveUp={handleMoveUp}
-                onMoveDown={handleMoveDown}
                 onAddBelow={(idx) => addStoryboard(idx)}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                isDragging={dragIndex === index}
+                isDragOver={dragOverIndex === index}
               />
             ))}
           </TableBody>
