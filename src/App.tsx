@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStoryboardStore } from '@/stores/storyboardStore';
 import { StoryboardTable } from '@/components/StoryboardTable';
-import { ExportButtons } from '@/components/ExportButtons';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { ProjectInfoPanel } from '@/components/ProjectInfoPanel';
 import { MaterialPanel } from '@/components/MaterialPanel';
@@ -20,11 +19,8 @@ import type { Project } from '@/types';
 import {
   Film,
   Plus,
-  Trash2,
-  Pencil,
   Clock,
   Layers,
-  ChevronRight,
 } from 'lucide-react';
 
 function App() {
@@ -36,19 +32,15 @@ function App() {
     loadProjects,
     loadProject,
     createProject,
-    updateProjectName,
     deleteCurrentProject,
     save,
     setPreviewImage,
-    setCurrentProject,
   } = useStoryboardStore();
 
   const tableRef = useRef<HTMLDivElement>(null);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [editingName, setEditingName] = useState(false);
-  const [projectName, setProjectName] = useState('');
   const saveTimeoutRef = useRef<number>(undefined);
 
   // 加载项目列表
@@ -73,12 +65,16 @@ function App() {
     };
   }, [currentProject, save]);
 
-  // 同步项目名称
+  // 监听删除对话框事件（来自 Header）
   useEffect(() => {
-    if (currentProject) {
-      setProjectName(currentProject.name);
-    }
-  }, [currentProject?.name]);
+    const handleOpenDeleteDialog = () => {
+      setShowDeleteDialog(true);
+    };
+    window.addEventListener('open-delete-dialog', handleOpenDeleteDialog);
+    return () => {
+      window.removeEventListener('open-delete-dialog', handleOpenDeleteDialog);
+    };
+  }, []);
 
   const handleCreateProject = async () => {
     if (newProjectName.trim()) {
@@ -95,21 +91,6 @@ function App() {
   const handleDeleteProject = async () => {
     await deleteCurrentProject();
     setShowDeleteDialog(false);
-  };
-
-  const handleBackToHome = async () => {
-    if (currentProject) {
-      await save();
-    }
-    setCurrentProject(null);
-    await loadProjects(); // 返回主页时刷新项目列表
-  };
-
-  const handleNameBlur = () => {
-    setEditingName(false);
-    if (projectName !== currentProject?.name) {
-      updateProjectName(projectName);
-    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -130,88 +111,46 @@ function App() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* 顶部导航 */}
-      <header className="bg-background border-b sticky top-0 z-40">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between h-10">
-            {/* 左侧：Logo 和项目名 */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleBackToHome}
-                className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <Film className="w-6 h-6 text-primary" />
-                极速分镜
-              </button>
+      {/* Header 已移到独立的 React root，不在这里渲染 */}
 
-              {currentProject && (
-                <div className="flex items-center gap-2 pl-4 border-l">
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  {editingName ? (
-                    <Input
-                      value={projectName}
-                      onChange={(e) => setProjectName(e.target.value)}
-                      onBlur={handleNameBlur}
-                      onKeyDown={(e) => e.key === 'Enter' && handleNameBlur()}
-                      className="h-8 w-48"
-                      autoFocus
-                    />
-                  ) : (
-                    <button
-                      onClick={() => setEditingName(true)}
-                      className="text-foreground hover:text-primary flex items-center gap-1 transition-colors font-medium cursor-pointer"
-                    >
-                      {currentProject.name}
-                      <Pencil className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
-              )}
+      {/* 主内容区 - 使用 CSS 切换 */}
+      {/* 项目编辑页 */}
+      <main
+        className="px-6 py-4"
+        style={{ display: currentProject ? 'block' : 'none' }}
+      >
+        {currentProject && (
+          <>
+            {/* 项目信息面板 */}
+            <div>
+              <ProjectInfoPanel />
             </div>
 
-            {/* 右侧：操作按钮 */}
-            <div className="flex items-center gap-3 min-w-0">
-              {currentProject && (
-                <>
-                  <ExportButtons tableRef={tableRef} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
+            {/* 统计信息 */}
+            <div className="mb-4 flex items-center gap-6 text-sm text-muted-foreground">
+              <span>共 {currentProject.storyboards.length} 个分镜</span>
+              <span>
+                总时长：
+                {currentProject.storyboards.reduce((sum, sb) => sum + (sb.duration || 0), 0)} 秒
+              </span>
             </div>
-          </div>
-        </div>
-      </header>
 
-      {/* 主内容区 */}
-      {currentProject ? (
-        <main className="px-6 py-4">
-          {/* 项目信息面板 */}
-          <ProjectInfoPanel />
+            {/* 分镜表格 */}
+            <div>
+              <StoryboardTable ref={tableRef} />
+            </div>
 
-          {/* 统计信息 */}
-          <div className="mb-4 flex items-center gap-6 text-sm text-muted-foreground">
-            <span>共 {currentProject.storyboards.length} 个分镜</span>
-            <span>
-              总时长：
-              {currentProject.storyboards.reduce((sum, sb) => sum + (sb.duration || 0), 0)} 秒
-            </span>
-          </div>
+            {/* 素材面板 */}
+            <MaterialPanel onPreview={setPreviewImage} />
+          </>
+        )}
+      </main>
 
-          {/* 分镜表格 */}
-          <StoryboardTable ref={tableRef} />
-
-          {/* 素材面板 */}
-          <MaterialPanel onPreview={setPreviewImage} />
-        </main>
-      ) : (
-        <main className="max-w-7xl mx-auto px-6 py-6">
+      {/* 首页 */}
+      <main
+        className="max-w-7xl mx-auto px-6 py-6"
+        style={{ display: currentProject ? 'none' : 'block' }}
+      >
           {/* 主页：项目列表 */}
           <div className="py-8">
             <div className="flex items-center justify-between mb-8">
@@ -277,7 +216,6 @@ function App() {
             )}
           </div>
         </main>
-      )}
 
       {/* 新建项目对话框 */}
       <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
