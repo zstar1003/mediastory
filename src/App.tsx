@@ -132,7 +132,7 @@ function App() {
     <div className="min-h-screen bg-muted/30">
       {/* 顶部导航 */}
       <header className="bg-background border-b sticky top-0 z-40">
-        <div className="max-w-[1600px] mx-auto px-4 py-3">
+        <div className="px-6 py-3">
           <div className="flex items-center justify-between h-10">
             {/* 左侧：Logo 和项目名 */}
             <div className="flex items-center gap-4">
@@ -190,29 +190,29 @@ function App() {
       </header>
 
       {/* 主内容区 */}
-      <main className="max-w-[1600px] mx-auto px-4 py-6">
-        {currentProject ? (
-          <>
-            {/* 项目信息面板 */}
-            <ProjectInfoPanel />
+      {currentProject ? (
+        <main className="px-6 py-4">
+          {/* 项目信息面板 */}
+          <ProjectInfoPanel />
 
-            {/* 统计信息 */}
-            <div className="mb-4 flex items-center gap-6 text-sm text-muted-foreground">
-              <span>共 {currentProject.storyboards.length} 个分镜</span>
-              <span>
-                总时长：
-                {currentProject.storyboards.reduce((sum, sb) => sum + (sb.duration || 0), 0)} 秒
-              </span>
-            </div>
+          {/* 统计信息 */}
+          <div className="mb-4 flex items-center gap-6 text-sm text-muted-foreground">
+            <span>共 {currentProject.storyboards.length} 个分镜</span>
+            <span>
+              总时长：
+              {currentProject.storyboards.reduce((sum, sb) => sum + (sb.duration || 0), 0)} 秒
+            </span>
+          </div>
 
-            {/* 分镜表格 */}
-            <StoryboardTable ref={tableRef} />
+          {/* 分镜表格 */}
+          <StoryboardTable ref={tableRef} />
 
-            {/* 素材面板 */}
-            <MaterialPanel onPreview={setPreviewImage} />
-          </>
-        ) : (
-          /* 主页：项目列表 */
+          {/* 素材面板 */}
+          <MaterialPanel onPreview={setPreviewImage} />
+        </main>
+      ) : (
+        <main className="max-w-7xl mx-auto px-6 py-6">
+          {/* 主页：项目列表 */}
           <div className="py-8">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -276,8 +276,8 @@ function App() {
               </div>
             )}
           </div>
-        )}
-      </main>
+        </main>
+      )}
 
       {/* 新建项目对话框 */}
       <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
