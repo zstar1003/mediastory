@@ -62,6 +62,21 @@ export const VideoCell = ({ value, onChange }: VideoCellProps) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+
+    // 检查是否是从素材箱拖入的
+    const materialData = e.dataTransfer.getData('application/json');
+    if (materialData) {
+      try {
+        const material = JSON.parse(materialData);
+        if (material.type === 'video' && material.data) {
+          onChange(material.data);
+          return;
+        }
+      } catch {
+        // 不是有效的素材数据，继续处理文件拖拽
+      }
+    }
+
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('video/')) {
       handleFile(file);

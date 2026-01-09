@@ -42,6 +42,21 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+
+    // 检查是否是从素材箱拖入的
+    const materialData = e.dataTransfer.getData('application/json');
+    if (materialData) {
+      try {
+        const material = JSON.parse(materialData);
+        if (material.type === 'image' && material.data) {
+          onChange(material.data);
+          return;
+        }
+      } catch {
+        // 不是有效的素材数据，继续处理文件拖拽
+      }
+    }
+
     const file = getImageFromDrop(e.dataTransfer);
     if (file) {
       handleFile(file);

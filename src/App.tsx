@@ -3,6 +3,8 @@ import { useStoryboardStore } from '@/stores/storyboardStore';
 import { StoryboardTable } from '@/components/StoryboardTable';
 import { ExportButtons } from '@/components/ExportButtons';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
+import { ProjectInfoPanel } from '@/components/ProjectInfoPanel';
+import { MaterialPanel } from '@/components/MaterialPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -191,6 +193,9 @@ function App() {
       <main className="max-w-[1600px] mx-auto px-4 py-6">
         {currentProject ? (
           <>
+            {/* 项目信息面板 */}
+            <ProjectInfoPanel />
+
             {/* 统计信息 */}
             <div className="mb-4 flex items-center gap-6 text-sm text-muted-foreground">
               <span>共 {currentProject.storyboards.length} 个分镜</span>
@@ -202,6 +207,9 @@ function App() {
 
             {/* 分镜表格 */}
             <StoryboardTable ref={tableRef} />
+
+            {/* 素材面板 */}
+            <MaterialPanel onPreview={setPreviewImage} />
           </>
         ) : (
           /* 主页：项目列表 */

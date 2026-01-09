@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createEmptyStoryboard } from '../types';
-import type { Project, Storyboard } from '../types';
+import type { Project, Storyboard, ReferenceImage, Material, ProjectInfo } from '../types';
 import { saveProject, getProject, getAllProjects, deleteProject, createNewProject } from '../utils/db';
 
 interface StoryboardStore {
@@ -15,6 +15,7 @@ interface StoryboardStore {
   loadProject: (id: string) => Promise<void>;
   createProject: (name?: string) => Promise<Project>;
   updateProjectName: (name: string) => void;
+  updateProjectInfo: (info: Partial<ProjectInfo>) => void;
   deleteCurrentProject: () => Promise<void>;
 
   // 分镜操作
@@ -23,6 +24,16 @@ interface StoryboardStore {
   deleteStoryboard: (id: string) => void;
   moveStoryboard: (fromIndex: number, toIndex: number) => void;
   duplicateStoryboard: (id: string) => void;
+
+  // 参考图操作
+  addSceneReference: (ref: ReferenceImage) => void;
+  removeSceneReference: (id: string) => void;
+  addCharacterReference: (ref: ReferenceImage) => void;
+  removeCharacterReference: (id: string) => void;
+
+  // 素材箱操作
+  addMaterial: (material: Material) => void;
+  removeMaterial: (id: string) => void;
 
   // 图片预览
   setPreviewImage: (image: string | null) => void;
@@ -70,6 +81,18 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
     const { currentProject } = get();
     if (currentProject) {
       set({ currentProject: { ...currentProject, name } });
+    }
+  },
+
+  updateProjectInfo: (info: Partial<ProjectInfo>) => {
+    const { currentProject } = get();
+    if (currentProject) {
+      set({
+        currentProject: {
+          ...currentProject,
+          info: { ...currentProject.info, ...info },
+        },
+      });
     }
   },
 
@@ -147,6 +170,75 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
     const storyboards = [...currentProject.storyboards];
     storyboards.splice(index + 1, 0, duplicate);
     set({ currentProject: { ...currentProject, storyboards } });
+  },
+
+  // 场景参考图
+  addSceneReference: (ref: ReferenceImage) => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+    set({
+      currentProject: {
+        ...currentProject,
+        sceneReferences: [...currentProject.sceneReferences, ref],
+      },
+    });
+  },
+
+  removeSceneReference: (id: string) => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+    set({
+      currentProject: {
+        ...currentProject,
+        sceneReferences: currentProject.sceneReferences.filter((r) => r.id !== id),
+      },
+    });
+  },
+
+  // 人物参考图
+  addCharacterReference: (ref: ReferenceImage) => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+    set({
+      currentProject: {
+        ...currentProject,
+        characterReferences: [...currentProject.characterReferences, ref],
+      },
+    });
+  },
+
+  removeCharacterReference: (id: string) => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+    set({
+      currentProject: {
+        ...currentProject,
+        characterReferences: currentProject.characterReferences.filter((r) => r.id !== id),
+      },
+    });
+  },
+
+  // 素材箱
+  addMaterial: (material: Material) => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+    set({
+      currentProject: {
+        ...currentProject,
+        materials: [...currentProject.materials, material],
+      },
+    });
+  },
+
+  removeMaterial: (id: string) => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+    set({
+      currentProject: {
+        ...currentProject,
+        materials: currentProject.materials.filter((m) => m.id !== id),
+      },
+    });
   },
 
   setPreviewImage: (image: string | null) => {

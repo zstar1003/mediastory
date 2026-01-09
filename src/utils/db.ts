@@ -1,6 +1,7 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 import type { Project } from '../types';
+import { createEmptyProjectInfo } from '../types';
 
 interface StoryboardDB extends DBSchema {
   projects: {
@@ -28,17 +29,29 @@ export async function getDB(): Promise<IDBPDatabase<StoryboardDB>> {
   return dbInstance;
 }
 
+// 确保项目有新字段（向后兼容）
+function ensureProjectFields(project: Project): Project {
+  return {
+    ...project,
+    info: project.info || createEmptyProjectInfo(),
+    sceneReferences: project.sceneReferences || [],
+    characterReferences: project.characterReferences || [],
+    materials: project.materials || [],
+  };
+}
+
 // 获取所有项目
 export async function getAllProjects(): Promise<Project[]> {
   const db = await getDB();
   const projects = await db.getAllFromIndex('projects', 'by-updated');
-  return projects.reverse(); // 最新的在前面
+  return projects.reverse().map(ensureProjectFields); // 最新的在前面
 }
 
 // 获取单个项目
 export async function getProject(id: string): Promise<Project | undefined> {
   const db = await getDB();
-  return db.get('projects', id);
+  const project = await db.get('projects', id);
+  return project ? ensureProjectFields(project) : undefined;
 }
 
 // 保存项目
@@ -62,5 +75,9 @@ export function createNewProject(name = '未命名项目'): Project {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     storyboards: [],
+    info: createEmptyProjectInfo(),
+    sceneReferences: [],
+    characterReferences: [],
+    materials: [],
   };
 }
