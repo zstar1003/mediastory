@@ -94,6 +94,24 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
     inputRef.current?.click();
   };
 
+  // 处理图片拖出到素材箱
+  const handleImageDragStart = (e: React.DragEvent) => {
+    if (!value) {
+      e.preventDefault();
+      return;
+    }
+    const material = {
+      id: `storyboard-${Date.now()}`,
+      name: '分镜图片',
+      type: 'image',
+      data: value,
+      createdAt: Date.now(),
+      fromStoryboard: true,
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(material));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
   return (
     <div
       className={cn(
@@ -117,11 +135,15 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
       />
 
       {value ? (
-        <>
+        <div
+          className="w-full h-full cursor-grab active:cursor-grabbing"
+          draggable
+          onDragStart={handleImageDragStart}
+        >
           <img
             src={value}
             alt="分镜图片"
-            className="w-full h-full object-contain rounded-lg"
+            className="w-full h-full object-contain rounded-lg pointer-events-none"
           />
           <div className="absolute top-1 right-1 flex gap-1">
             <Button
@@ -141,7 +163,7 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
-        </>
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
           <Plus className="h-6 w-6 mb-1" />

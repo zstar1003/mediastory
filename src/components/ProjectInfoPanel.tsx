@@ -16,6 +16,7 @@ interface ReferenceImageGridProps {
 
 const ReferenceImageGrid = ({ images, onAdd, onRemove, onPreview, emptyText = '添加图片' }: ReferenceImageGridProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -41,12 +42,92 @@ const ReferenceImageGrid = ({ images, onAdd, onRemove, onPreview, emptyText = '�
     }
   };
 
+  // 处理拖放
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    // 检查是否是从素材箱拖入的
+    const materialData = e.dataTransfer.getData('application/json');
+    if (materialData) {
+      try {
+        const material = JSON.parse(materialData);
+        if (material.type === 'image' && material.data) {
+          const ref: ReferenceImage = {
+            id: crypto.randomUUID(),
+            name: material.name || '素材图片',
+            data: material.data,
+          };
+          onAdd(ref);
+          // 触发事件通知素材箱移除该素材
+          window.dispatchEvent(new CustomEvent('material-dropped', {
+            detail: { materialId: material.id }
+          }));
+          return;
+        }
+      } catch {
+        // 不是有效的素材数据
+      }
+    }
+
+    // 处理文件拖拽
+    const files = e.dataTransfer.files;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const ref: ReferenceImage = {
+          id: crypto.randomUUID(),
+          name: file.name,
+          data: reader.result as string,
+        };
+        onAdd(ref);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  // 处理图片拖出到素材箱
+  const handleImageDragStart = (e: React.DragEvent, img: ReferenceImage) => {
+    e.stopPropagation();
+    const material = {
+      id: `ref-${img.id}`,
+      name: img.name,
+      type: 'image',
+      data: img.data,
+      createdAt: Date.now(),
+      fromReference: true, // 标记来自参考图
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(material));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
   return (
-    <div className="flex flex-wrap gap-2">
+    <div
+      className={cn(
+        'flex flex-wrap gap-2 p-2 -m-2 rounded-lg transition-colors',
+        isDragging && 'bg-primary/10 ring-2 ring-primary/50'
+      )}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
       {images.map((img) => (
         <div
           key={img.id}
-          className="relative group w-16 h-16 rounded-lg overflow-hidden border bg-muted cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+          className="relative group w-16 h-16 rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-primary/50 transition-all"
+          draggable
+          onDragStart={(e) => handleImageDragStart(e, img)}
           onClick={() => onPreview(img.data)}
         >
           <img src={img.data} alt={img.name} className="w-full h-full object-cover" />

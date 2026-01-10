@@ -14,27 +14,232 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// 素材拖放区组件
+interface MaterialDropZoneProps {
+  type: 'image' | 'video';
+  materials: Material[];
+  onPreview: (image: string) => void;
+}
+
+const MaterialDropZone = ({ type, materials, onPreview }: MaterialDropZoneProps) => {
+  const { addMaterial, removeMaterial } = useStoryboardStore();
+  const [isDragging, setIsDragging] = useState(false);
+  const dragImageRef = useRef<HTMLDivElement>(null);
+
+  // 处理拖放进入素材箱
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const materialData = e.dataTransfer.getData('application/json');
+    if (materialData) {
+      try {
+        const data = JSON.parse(materialData);
+        // 只接受对应类型的素材
+        if (data.type === type && data.data) {
+          // 检查是否来自分镜或参考图（不是素材箱自己的）
+          if (data.fromStoryboard || data.fromReference) {
+            const material: Material = {
+              id: crypto.randomUUID(),
+              name: data.name || (type === 'image' ? '图片素材' : '视频素材'),
+              type: type,
+              data: data.data,
+              createdAt: Date.now(),
+            };
+            addMaterial(material);
+          }
+        }
+      } catch {
+        // 忽略无效数据
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  // 处理素材拖出
+  const handleDragStart = (e: React.DragEvent, material: Material) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(material));
+    e.dataTransfer.effectAllowed = 'move';
+
+    // 创建自定义拖拽图像
+    if (dragImageRef.current) {
+      const dragImage = dragImageRef.current;
+      dragImage.innerHTML = '';
+
+      if (material.type === 'image') {
+        const img = document.createElement('img');
+        img.src = material.data;
+        img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+        dragImage.appendChild(img);
+      } else {
+        const video = document.createElement('video');
+        video.src = material.data;
+        video.style.cssText = 'width: 100px; height: 60px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+        dragImage.appendChild(video);
+      }
+
+      e.dataTransfer.setDragImage(dragImage, 40, 40);
+    }
+  };
+
+  if (type === 'image') {
+    return (
+      <div
+        className={cn(
+          'min-h-[200px] rounded-lg transition-colors',
+          isDragging && 'bg-primary/10 ring-2 ring-primary/50'
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {materials.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>暂无图片素材</p>
+            <p className="text-sm">点击上方按钮添加，或从分镜拖入</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {materials.map((material) => (
+              <div
+                key={material.id}
+                className="relative group aspect-square rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={(e) => handleDragStart(e, material)}
+                onClick={() => onPreview(material.data)}
+              >
+                <img
+                  src={material.data}
+                  alt={material.name}
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                  {material.name}
+                </div>
+                <button
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeMaterial(material.id);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* 隐藏的拖拽图像容器 */}
+        <div
+          ref={dragImageRef}
+          style={{
+            position: 'fixed',
+            top: '-1000px',
+            left: '-1000px',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 视频类型
+  return (
+    <div
+      className={cn(
+        'min-h-[200px] rounded-lg transition-colors',
+        isDragging && 'bg-primary/10 ring-2 ring-primary/50'
+      )}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
+      {materials.length === 0 ? (
+        <div className="text-center text-muted-foreground py-8">
+          <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p>暂无视频素材</p>
+          <p className="text-sm">点击上方按钮添加，或从分镜拖入</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {materials.map((material) => (
+            <div
+              key={material.id}
+              className="relative group rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
+              draggable
+              onDragStart={(e) => handleDragStart(e, material)}
+            >
+              <video
+                src={material.data}
+                className="w-full aspect-video object-cover pointer-events-none"
+                muted
+                onMouseEnter={(e) => e.currentTarget.play()}
+                onMouseLeave={(e) => {
+                  e.currentTarget.pause();
+                  e.currentTarget.currentTime = 0;
+                }}
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-2 truncate">
+                {material.name}
+              </div>
+              <button
+                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeMaterial(material.id);
+                }}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* 隐藏的拖拽图像容器 */}
+      <div
+        ref={dragImageRef}
+        style={{
+          position: 'fixed',
+          top: '-1000px',
+          left: '-1000px',
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  );
+};
+
 interface MaterialPanelProps {
   onPreview: (image: string) => void;
 }
 
 export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
-  const { currentProject, addMaterial, removeMaterial } = useStoryboardStore();
+  const { currentProject, addMaterial } = useStoryboardStore();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dragImageRef = useRef<HTMLDivElement>(null);
 
   // 监听素材拖拽完成事件
   useEffect(() => {
     const handleMaterialDropped = (e: CustomEvent<{ materialId: string }>) => {
+      const { removeMaterial } = useStoryboardStore.getState();
       removeMaterial(e.detail.materialId);
     };
     window.addEventListener('material-dropped', handleMaterialDropped as EventListener);
     return () => {
       window.removeEventListener('material-dropped', handleMaterialDropped as EventListener);
     };
-  }, [removeMaterial]);
+  }, []);
 
   if (!currentProject) return null;
 
@@ -71,31 +276,6 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
-    }
-  };
-
-  const handleDragStart = (e: React.DragEvent, material: Material) => {
-    e.dataTransfer.setData('application/json', JSON.stringify(material));
-    e.dataTransfer.effectAllowed = 'move';
-
-    // 创建自定义拖拽图像
-    if (dragImageRef.current) {
-      const dragImage = dragImageRef.current;
-      dragImage.innerHTML = '';
-
-      if (material.type === 'image') {
-        const img = document.createElement('img');
-        img.src = material.data;
-        img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
-        dragImage.appendChild(img);
-      } else {
-        const video = document.createElement('video');
-        video.src = material.data;
-        video.style.cssText = 'width: 100px; height: 60px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
-        dragImage.appendChild(video);
-      }
-
-      e.dataTransfer.setDragImage(dragImage, 40, 40);
     }
   };
 
@@ -157,87 +337,11 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
             </TabsList>
 
             <TabsContent value="image" className="flex-1 overflow-auto p-4 m-0">
-              {imageMaterials.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>暂无图片素材</p>
-                  <p className="text-sm">点击上方按钮添加</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {imageMaterials.map((material) => (
-                    <div
-                      key={material.id}
-                      className="relative group aspect-square rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, material)}
-                      onClick={() => onPreview(material.data)}
-                    >
-                      <img
-                        src={material.data}
-                        alt={material.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                        {material.name}
-                      </div>
-                      <button
-                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeMaterial(material.id);
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <MaterialDropZone type="image" materials={imageMaterials} onPreview={onPreview} />
             </TabsContent>
 
             <TabsContent value="video" className="flex-1 overflow-auto p-4 m-0">
-              {videoMaterials.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>暂无视频素材</p>
-                  <p className="text-sm">点击上方按钮添加</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {videoMaterials.map((material) => (
-                    <div
-                      key={material.id}
-                      className="relative group rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, material)}
-                    >
-                      <video
-                        src={material.data}
-                        className="w-full aspect-video object-cover"
-                        muted
-                        onMouseEnter={(e) => e.currentTarget.play()}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.pause();
-                          e.currentTarget.currentTime = 0;
-                        }}
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-2 truncate">
-                        {material.name}
-                      </div>
-                      <button
-                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeMaterial(material.id);
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <MaterialDropZone type="video" materials={videoMaterials} onPreview={onPreview} />
             </TabsContent>
           </Tabs>
 
@@ -256,17 +360,6 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
           onChange={handleFileSelect}
         />
       </div>
-
-      {/* 隐藏的拖拽图像容器 */}
-      <div
-        ref={dragImageRef}
-        style={{
-          position: 'fixed',
-          top: '-1000px',
-          left: '-1000px',
-          pointerEvents: 'none',
-        }}
-      />
     </>
   );
 };
