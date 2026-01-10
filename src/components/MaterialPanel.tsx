@@ -82,6 +82,19 @@ const MaterialDropZone = ({ type, materials, onPreview }: MaterialDropZoneProps)
               createdAt: Date.now(),
             };
             addMaterial(material);
+
+            // 如果来自分镜，通知源分镜清除图片/视频
+            if (data.fromStoryboard && data.sourceStoryboardId) {
+              if (data.type === 'image') {
+                window.dispatchEvent(new CustomEvent('storyboard-image-cleared', {
+                  detail: { storyboardId: data.sourceStoryboardId }
+                }));
+              } else if (data.type === 'video') {
+                window.dispatchEvent(new CustomEvent('storyboard-video-cleared', {
+                  detail: { storyboardId: data.sourceStoryboardId }
+                }));
+              }
+            }
           }
         }
       } catch {
