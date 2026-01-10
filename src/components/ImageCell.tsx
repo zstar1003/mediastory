@@ -50,6 +50,10 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
         const material = JSON.parse(materialData);
         if (material.type === 'image' && material.data) {
           onChange(material.data);
+          // 触发事件通知素材箱移除该素材
+          window.dispatchEvent(new CustomEvent('material-dropped', {
+            detail: { materialId: material.id }
+          }));
           return;
         }
       } catch {

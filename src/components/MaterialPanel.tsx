@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useStoryboardStore } from '@/stores/storyboardStore';
 import type { Material } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,18 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragImageRef = useRef<HTMLDivElement>(null);
+
+  // 监听素材拖拽完成事件
+  useEffect(() => {
+    const handleMaterialDropped = (e: CustomEvent<{ materialId: string }>) => {
+      removeMaterial(e.detail.materialId);
+    };
+    window.addEventListener('material-dropped', handleMaterialDropped as EventListener);
+    return () => {
+      window.removeEventListener('material-dropped', handleMaterialDropped as EventListener);
+    };
+  }, [removeMaterial]);
 
   if (!currentProject) return null;
 
@@ -64,7 +76,27 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
 
   const handleDragStart = (e: React.DragEvent, material: Material) => {
     e.dataTransfer.setData('application/json', JSON.stringify(material));
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.effectAllowed = 'move';
+
+    // 创建自定义拖拽图像
+    if (dragImageRef.current) {
+      const dragImage = dragImageRef.current;
+      dragImage.innerHTML = '';
+
+      if (material.type === 'image') {
+        const img = document.createElement('img');
+        img.src = material.data;
+        img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+        dragImage.appendChild(img);
+      } else {
+        const video = document.createElement('video');
+        video.src = material.data;
+        video.style.cssText = 'width: 100px; height: 60px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+        dragImage.appendChild(video);
+      }
+
+      e.dataTransfer.setDragImage(dragImage, 40, 40);
+    }
   };
 
   const imageMaterials = currentProject.materials.filter((m) => m.type === 'image');
@@ -224,6 +256,17 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
           onChange={handleFileSelect}
         />
       </div>
+
+      {/* 隐藏的拖拽图像容器 */}
+      <div
+        ref={dragImageRef}
+        style={{
+          position: 'fixed',
+          top: '-1000px',
+          left: '-1000px',
+          pointerEvents: 'none',
+        }}
+      />
     </>
   );
 };

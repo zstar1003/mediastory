@@ -70,6 +70,10 @@ export const VideoCell = ({ value, onChange }: VideoCellProps) => {
         const material = JSON.parse(materialData);
         if (material.type === 'video' && material.data) {
           onChange(material.data);
+          // 触发事件通知素材箱移除该素材
+          window.dispatchEvent(new CustomEvent('material-dropped', {
+            detail: { materialId: material.id }
+          }));
           return;
         }
       } catch {
