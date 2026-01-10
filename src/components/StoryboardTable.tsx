@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useEffect } from 'react';
 import { useStoryboardStore } from '@/stores/storyboardStore';
 import type { Storyboard } from '@/types';
 import { ImageCell } from './ImageCell';
@@ -61,14 +61,22 @@ const StoryboardRow = ({
   return (
     <TableRow
       className={`${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
-      draggable
-      onDragStart={() => onDragStart(index)}
       onDragOver={(e) => onDragOver(e, index)}
       onDragEnd={onDragEnd}
     >
       {/* 序号 - 拖拽手柄 */}
       <TableCell className="text-center font-medium text-muted-foreground w-20">
-        <div className="flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing">
+        <div
+          className="flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing"
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            // 设置行拖拽标记
+            e.dataTransfer.setData('text/plain', `row-${index}`);
+            e.dataTransfer.effectAllowed = 'move';
+            onDragStart(index);
+          }}
+        >
           <GripVertical className="h-4 w-4 text-gray-400" />
           <span className="text-lg">{index + 1}</span>
         </div>
@@ -80,6 +88,7 @@ const StoryboardRow = ({
           value={storyboard.imageData}
           onChange={(v) => onUpdate(storyboard.id, { imageData: v })}
           onPreview={onPreview}
+          storyboardId={storyboard.id}
         />
       </TableCell>
 
@@ -189,6 +198,17 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // 监听分镜图片清除事件（从一个分镜拖到另一个分镜时）
+  useEffect(() => {
+    const handleImageCleared = (e: CustomEvent<{ storyboardId: string }>) => {
+      updateStoryboard(e.detail.storyboardId, { imageData: undefined });
+    };
+    window.addEventListener('storyboard-image-cleared', handleImageCleared as EventListener);
+    return () => {
+      window.removeEventListener('storyboard-image-cleared', handleImageCleared as EventListener);
+    };
+  }, [updateStoryboard]);
+
   const handleDeleteClick = (id: string) => {
     setStoryboardToDelete(id);
     setDeleteDialogOpen(true);
@@ -207,6 +227,12 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
+    // 只处理行拖拽，忽略图片拖拽
+    const types = e.dataTransfer.types;
+    if (!types.includes('text/plain')) {
+      return; // 不是行拖拽，忽略
+    }
+
     e.preventDefault();
     if (dragIndex !== null && dragIndex !== index) {
       setDragOverIndex(index);

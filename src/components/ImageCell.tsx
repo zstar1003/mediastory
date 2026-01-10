@@ -8,9 +8,10 @@ interface ImageCellProps {
   value?: string;
   onChange: (value: string | undefined) => void;
   onPreview: (image: string) => void;
+  storyboardId?: string; // 用于分镜间拖拽
 }
 
-export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
+export const ImageCell = ({ value, onChange, onPreview, storyboardId }: ImageCellProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -43,17 +44,25 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
     e.preventDefault();
     setIsDragging(false);
 
-    // 检查是否是从素材箱拖入的
+    // 检查是否是从素材箱或其他分镜拖入的
     const materialData = e.dataTransfer.getData('application/json');
     if (materialData) {
       try {
         const material = JSON.parse(materialData);
         if (material.type === 'image' && material.data) {
           onChange(material.data);
-          // 触发事件通知素材箱移除该素材
-          window.dispatchEvent(new CustomEvent('material-dropped', {
-            detail: { materialId: material.id }
-          }));
+
+          // 如果是从其他分镜拖入的，通知源分镜清除图片
+          if (material.fromStoryboard && material.sourceStoryboardId && material.sourceStoryboardId !== storyboardId) {
+            window.dispatchEvent(new CustomEvent('storyboard-image-cleared', {
+              detail: { storyboardId: material.sourceStoryboardId }
+            }));
+          } else if (!material.fromStoryboard && !material.fromReference) {
+            // 从素材箱拖入的，通知素材箱移除该素材
+            window.dispatchEvent(new CustomEvent('material-dropped', {
+              detail: { materialId: material.id }
+            }));
+          }
           return;
         }
       } catch {
@@ -94,7 +103,7 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
     inputRef.current?.click();
   };
 
-  // 处理图片拖出到素材箱
+  // 处理图片拖出到素材箱或其他分镜
   const handleImageDragStart = (e: React.DragEvent) => {
     if (!value) {
       e.preventDefault();
@@ -107,6 +116,7 @@ export const ImageCell = ({ value, onChange, onPreview }: ImageCellProps) => {
       data: value,
       createdAt: Date.now(),
       fromStoryboard: true,
+      sourceStoryboardId: storyboardId, // 添加源分镜ID
     };
     e.dataTransfer.setData('application/json', JSON.stringify(material));
     e.dataTransfer.effectAllowed = 'copy';
