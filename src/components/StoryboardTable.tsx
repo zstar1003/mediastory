@@ -117,6 +117,7 @@ const StoryboardRow = ({
         <VideoCell
           value={storyboard.videoData}
           onChange={(v) => onUpdate(storyboard.id, { videoData: v })}
+          storyboardId={storyboard.id}
         />
       </TableCell>
 
@@ -203,9 +204,14 @@ export const StoryboardTable = forwardRef<HTMLDivElement>((_, ref) => {
     const handleImageCleared = (e: CustomEvent<{ storyboardId: string }>) => {
       updateStoryboard(e.detail.storyboardId, { imageData: undefined });
     };
+    const handleVideoCleared = (e: CustomEvent<{ storyboardId: string }>) => {
+      updateStoryboard(e.detail.storyboardId, { videoData: undefined });
+    };
     window.addEventListener('storyboard-image-cleared', handleImageCleared as EventListener);
+    window.addEventListener('storyboard-video-cleared', handleVideoCleared as EventListener);
     return () => {
       window.removeEventListener('storyboard-image-cleared', handleImageCleared as EventListener);
+      window.removeEventListener('storyboard-video-cleared', handleVideoCleared as EventListener);
     };
   }, [updateStoryboard]);
 

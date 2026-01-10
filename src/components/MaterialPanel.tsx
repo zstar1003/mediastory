@@ -11,8 +11,43 @@ import {
   Plus,
   Trash2,
   FolderOpen,
+  Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// 从视频提取首帧缩略图
+const extractVideoThumbnail = (videoSrc: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.preload = 'metadata';
+
+    video.onloadeddata = () => {
+      video.currentTime = 0;
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(thumbnail);
+        } else {
+          reject(new Error('无法创建canvas上下文'));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    video.onerror = () => reject(new Error('视频加载失败'));
+    video.src = videoSrc;
+  });
+};
 
 // 素材拖放区组件
 interface MaterialDropZoneProps {
@@ -154,6 +189,43 @@ const MaterialDropZone = ({ type, materials, onPreview }: MaterialDropZoneProps)
   }
 
   // 视频类型
+  const [videoThumbnails, setVideoThumbnails] = useState<Record<string, string>>({});
+
+  // 为视频生成缩略图
+  useEffect(() => {
+    if (type !== 'video') return;
+
+    materials.forEach(async (material) => {
+      if (!videoThumbnails[material.id]) {
+        try {
+          const thumbnail = await extractVideoThumbnail(material.data);
+          setVideoThumbnails(prev => ({ ...prev, [material.id]: thumbnail }));
+        } catch (err) {
+          console.error('生成视频缩略图失败:', err);
+        }
+      }
+    });
+  }, [materials, type, videoThumbnails]);
+
+  // 处理视频素材拖出（使用缩略图）
+  const handleVideoDragStart = (e: React.DragEvent, material: Material) => {
+    const thumbnail = videoThumbnails[material.id];
+    const materialWithThumbnail = { ...material, thumbnail };
+    e.dataTransfer.setData('application/json', JSON.stringify(materialWithThumbnail));
+    e.dataTransfer.effectAllowed = 'move';
+
+    // 使用缩略图作为拖拽图像
+    if (dragImageRef.current && thumbnail) {
+      const dragImage = dragImageRef.current;
+      dragImage.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = thumbnail;
+      img.style.cssText = 'width: 100px; height: 60px; object-fit: cover; border-radius: 8px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+      dragImage.appendChild(img);
+      e.dataTransfer.setDragImage(dragImage, 50, 30);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -172,37 +244,48 @@ const MaterialDropZone = ({ type, materials, onPreview }: MaterialDropZoneProps)
         </div>
       ) : (
         <div className="space-y-2">
-          {materials.map((material) => (
-            <div
-              key={material.id}
-              className="relative group rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
-              draggable
-              onDragStart={(e) => handleDragStart(e, material)}
-            >
-              <video
-                src={material.data}
-                className="w-full aspect-video object-cover pointer-events-none"
-                muted
-                onMouseEnter={(e) => e.currentTarget.play()}
-                onMouseLeave={(e) => {
-                  e.currentTarget.pause();
-                  e.currentTarget.currentTime = 0;
-                }}
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-2 truncate">
-                {material.name}
-              </div>
-              <button
-                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeMaterial(material.id);
-                }}
+          {materials.map((material) => {
+            const thumbnail = videoThumbnails[material.id];
+            return (
+              <div
+                key={material.id}
+                className="relative group rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={(e) => handleVideoDragStart(e, material)}
               >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+                {thumbnail ? (
+                  <div className="relative w-full aspect-video">
+                    <img
+                      src={thumbnail}
+                      alt={material.name}
+                      className="w-full h-full object-cover pointer-events-none"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+                        <Play className="h-4 w-4 text-white ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full aspect-video flex items-center justify-center bg-muted">
+                    <Play className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-2 truncate">
+                  {material.name}
+                </div>
+                <button
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeMaterial(material.id);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
       {/* 隐藏的拖拽图像容器 */}
