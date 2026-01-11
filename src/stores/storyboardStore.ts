@@ -17,6 +17,7 @@ interface StoryboardStore {
   updateProjectName: (name: string) => void;
   updateProjectInfo: (info: Partial<ProjectInfo>) => void;
   deleteCurrentProject: () => Promise<void>;
+  addImportedProject: (project: Project) => Promise<void>;
 
   // 分镜操作
   addStoryboard: (index?: number) => void;
@@ -103,6 +104,12 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
       set({ currentProject: null });
       await get().loadProjects();
     }
+  },
+
+  addImportedProject: async (project: Project) => {
+    await saveProject(project);
+    set({ currentProject: project });
+    await get().loadProjects();
   },
 
   addStoryboard: (index?: number) => {

@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { ChevronRight, Pencil, Trash2, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useStoryboardStore } from '@/stores/storyboardStore';
+import { exportProject, importProject } from '@/utils/projectIO';
 
 // Logo 组件 - 完全静态
 function LogoStatic() {
@@ -82,6 +83,7 @@ function ProjectNameEditor() {
 // 右侧操作按钮组件 - 需要从 App 获取 tableRef 和 onDeleteProject
 function HeaderActions() {
   const currentProject = useStoryboardStore((state) => state.currentProject);
+  const addImportedProject = useStoryboardStore((state) => state.addImportedProject);
   const isInProject = currentProject !== null;
 
   // 通过全局事件触发删除对话框
@@ -89,21 +91,61 @@ function HeaderActions() {
     window.dispatchEvent(new CustomEvent('open-delete-dialog'));
   };
 
+  // 导出项目
+  const handleExport = () => {
+    if (currentProject) {
+      // 先保存当前项目
+      useStoryboardStore.getState().save();
+      exportProject(currentProject);
+    }
+  };
+
+  // 导入项目
+  const handleImport = async () => {
+    const project = await importProject();
+    if (project) {
+      await addImportedProject(project);
+    }
+  };
+
   return (
-    <div
-      className={`flex items-center gap-3 transition-opacity duration-200 ${
-        isInProject ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
-    >
-      {/* 导出按钮暂时移除，因为需要 tableRef */}
+    <div className="flex items-center gap-2">
+      {/* 导入按钮 - 始终显示 */}
       <Button
-        variant="ghost"
-        size="icon"
-        className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-        onClick={handleDelete}
+        variant="outline"
+        size="sm"
+        className="cursor-pointer"
+        onClick={handleImport}
       >
-        <Trash2 className="h-4 w-4" />
+        <Upload className="h-4 w-4 mr-1" />
+        导入
       </Button>
+
+      {/* 项目内操作 */}
+      <div
+        className={`flex items-center gap-2 transition-opacity duration-200 ${
+          isInProject ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={handleExport}
+        >
+          <Download className="h-4 w-4 mr-1" />
+          导出
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+          onClick={handleDelete}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
