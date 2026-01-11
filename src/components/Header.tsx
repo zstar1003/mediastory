@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Film, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useStoryboardStore } from '@/stores/storyboardStore';
@@ -20,8 +20,8 @@ function LogoStatic() {
       onClick={handleClick}
       className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer flex-shrink-0"
     >
-      <Film className="w-6 h-6 text-primary" />
-      极速分镜
+      <img src="/logo.png" alt="极速分镜" className="w-8 h-8" />
+      <span className="text-foreground">极速分镜</span>
     </button>
   );
 }
