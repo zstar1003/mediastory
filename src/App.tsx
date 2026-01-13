@@ -21,6 +21,7 @@ import {
   Plus,
   Clock,
   Layers,
+  Trash2,
 } from 'lucide-react';
 
 function App() {
@@ -32,7 +33,7 @@ function App() {
     loadProjects,
     loadProject,
     createProject,
-    deleteCurrentProject,
+    deleteProjectById,
     save,
     setPreviewImage,
   } = useStoryboardStore();
@@ -40,6 +41,7 @@ function App() {
   const tableRef = useRef<HTMLDivElement>(null);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
   const saveTimeoutRef = useRef<number>(undefined);
 
@@ -65,17 +67,6 @@ function App() {
     };
   }, [currentProject, save]);
 
-  // 监听删除对话框事件（来自 Header）
-  useEffect(() => {
-    const handleOpenDeleteDialog = () => {
-      setShowDeleteDialog(true);
-    };
-    window.addEventListener('open-delete-dialog', handleOpenDeleteDialog);
-    return () => {
-      window.removeEventListener('open-delete-dialog', handleOpenDeleteDialog);
-    };
-  }, []);
-
   const handleCreateProject = async () => {
     if (newProjectName.trim()) {
       await createProject(newProjectName.trim());
@@ -88,9 +79,18 @@ function App() {
     await loadProject(project.id);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation(); // 阻止冒泡，避免触发卡片点击
+    setProjectToDelete(project);
+    setShowDeleteDialog(true);
+  };
+
   const handleDeleteProject = async () => {
-    await deleteCurrentProject();
-    setShowDeleteDialog(false);
+    if (projectToDelete) {
+      await deleteProjectById(projectToDelete.id);
+      setShowDeleteDialog(false);
+      setProjectToDelete(null);
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -181,11 +181,21 @@ function App() {
                 {projects.map((project) => (
                   <Card
                     key={project.id}
-                    className="cursor-pointer hover:shadow-md hover:border-primary/50 transition-all"
+                    className="cursor-pointer hover:shadow-md hover:border-primary/50 transition-all group relative"
                     onClick={() => handleSelectProject(project)}
                   >
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg truncate">{project.name}</CardTitle>
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg truncate flex-1 pr-2">{project.name}</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer flex-shrink-0"
+                          onClick={(e) => handleDeleteClick(e, project)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -244,16 +254,22 @@ function App() {
       </Dialog>
 
       {/* 删除确认对话框 */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => {
+        setShowDeleteDialog(open);
+        if (!open) setProjectToDelete(null);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>删除项目</DialogTitle>
             <DialogDescription>
-              确定要删除项目 "{currentProject?.name}" 吗？此操作不可撤销，所有分镜数据将被永久删除。
+              确定要删除项目 "{projectToDelete?.name}" 吗？此操作不可撤销，所有分镜数据将被永久删除。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="cursor-pointer">
+            <Button variant="outline" onClick={() => {
+              setShowDeleteDialog(false);
+              setProjectToDelete(null);
+            }} className="cursor-pointer">
               取消
             </Button>
             <Button variant="destructive" onClick={handleDeleteProject} className="cursor-pointer">

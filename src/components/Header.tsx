@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ChevronRight, Pencil, Trash2, Download, Upload, Share2, Cloud, LogOut, User } from 'lucide-react';
+import { ChevronRight, Pencil, Download, Upload, Share2, Cloud, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useStoryboardStore } from '@/stores/storyboardStore';
@@ -96,11 +96,6 @@ function HeaderActions() {
   const [cloudProjectId, setCloudProjectId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 通过全局事件触发删除对话框
-  const handleDelete = () => {
-    window.dispatchEvent(new CustomEvent('open-delete-dialog'));
-  };
-
   // 导出项目
   const handleExport = () => {
     if (currentProject) {
@@ -172,15 +167,6 @@ function HeaderActions() {
         >
           <Download className="h-4 w-4 mr-1" />
           导出
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-          onClick={handleDelete}
-        >
-          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 

@@ -17,6 +17,7 @@ interface StoryboardStore {
   updateProjectName: (name: string) => void;
   updateProjectInfo: (info: Partial<ProjectInfo>) => void;
   deleteCurrentProject: () => Promise<void>;
+  deleteProjectById: (id: string) => Promise<void>;
   addImportedProject: (project: Project) => Promise<void>;
 
   // 分镜操作
@@ -104,6 +105,16 @@ export const useStoryboardStore = create<StoryboardStore>((set, get) => ({
       set({ currentProject: null });
       await get().loadProjects();
     }
+  },
+
+  deleteProjectById: async (id: string) => {
+    const { currentProject } = get();
+    await deleteProject(id);
+    // 如果删除的是当前项目，清空当前项目
+    if (currentProject?.id === id) {
+      set({ currentProject: null });
+    }
+    await get().loadProjects();
   },
 
   addImportedProject: async (project: Project) => {
