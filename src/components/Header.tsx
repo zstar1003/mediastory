@@ -1,9 +1,13 @@
 import { useState, useCallback } from 'react';
-import { ChevronRight, Pencil, Trash2, Download, Upload } from 'lucide-react';
+import { ChevronRight, Pencil, Trash2, Download, Upload, Share2, Cloud, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useStoryboardStore } from '@/stores/storyboardStore';
+import { useCloudStore } from '@/stores/cloudStore';
 import { exportProject, importProject } from '@/utils/projectIO';
+import { ShareDialog } from './ShareDialog';
+import { AuthDialog } from './AuthDialog';
+import * as api from '@/services/api';
 
 // Logo 组件 - 完全静态
 function LogoStatic() {
@@ -84,7 +88,13 @@ function ProjectNameEditor() {
 function HeaderActions() {
   const currentProject = useStoryboardStore((state) => state.currentProject);
   const addImportedProject = useStoryboardStore((state) => state.addImportedProject);
+  const { user, isAuthenticated, logout } = useCloudStore();
   const isInProject = currentProject !== null;
+
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [cloudProjectId, setCloudProjectId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // 通过全局事件触发删除对话框
   const handleDelete = () => {
@@ -108,25 +118,52 @@ function HeaderActions() {
     }
   };
 
+  // 分享项目
+  const handleShare = async () => {
+    if (!currentProject) return;
+
+    if (!isAuthenticated) {
+      setAuthDialogOpen(true);
+      return;
+    }
+
+    // 如果还没有云端项目ID，先上传
+    if (!cloudProjectId) {
+      setIsUploading(true);
+      try {
+        await useStoryboardStore.getState().save();
+        const result = await api.uploadProject(currentProject);
+        setCloudProjectId(result.id);
+        setShareDialogOpen(true);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : '上传失败');
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      setShareDialogOpen(true);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2">
-      {/* 导入按钮 - 始终显示 */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="cursor-pointer"
-        onClick={handleImport}
-      >
-        <Upload className="h-4 w-4 mr-1" />
-        导入
-      </Button>
-
       {/* 项目内操作 */}
       <div
         className={`flex items-center gap-2 transition-opacity duration-200 ${
           isInProject ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={handleShare}
+          disabled={isUploading}
+        >
+          <Share2 className="h-4 w-4 mr-1" />
+          {isUploading ? '上传中...' : '分享'}
+        </Button>
+
         <Button
           variant="outline"
           size="sm"
@@ -146,6 +183,56 @@ function HeaderActions() {
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* 导入按钮 - 始终显示 */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="cursor-pointer"
+        onClick={handleImport}
+      >
+        <Upload className="h-4 w-4 mr-1" />
+        导入
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* 云端账户 */}
+      {isAuthenticated ? (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <User className="h-4 w-4" />
+            {user?.nickname}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 cursor-pointer"
+            onClick={logout}
+            title="退出登录"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => setAuthDialogOpen(true)}
+        >
+          <Cloud className="h-4 w-4 mr-1" />
+          登录
+        </Button>
+      )}
+
+      {/* 对话框 */}
+      <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        projectId={cloudProjectId || ''}
+      />
     </div>
   );
 }
