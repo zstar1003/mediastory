@@ -4,7 +4,8 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/mediastory/',
+  // GitHub Pages 使用 /mediastory/，自定义域名使用 /
+  base: process.env.GITHUB_ACTIONS ? '/mediastory/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
