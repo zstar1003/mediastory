@@ -8,6 +8,7 @@ import { exportProject, importProject } from '@/utils/projectIO';
 import { ShareDialog } from './ShareDialog';
 import { AuthDialog } from './AuthDialog';
 import * as api from '@/services/api';
+import logoImg from '/logo.png';
 
 // Logo 组件 - 完全静态
 function LogoStatic() {
@@ -25,7 +26,7 @@ function LogoStatic() {
       onClick={handleClick}
       className="text-xl font-bold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer flex-shrink-0"
     >
-      <img src="/logo.png" alt="极速分镜" className="w-8 h-8" />
+      <img src={logoImg} alt="极速分镜" className="w-8 h-8" />
       <span className="text-foreground">极速分镜</span>
     </button>
   );
