@@ -1,8 +1,12 @@
-# 极速分镜 (MediaStory)
+<div align="center">
+  <img src="public/logo.png" width="100" alt="FreeTex">
+</div>
 
 一款专为影视创作者设计的 AIGC 分镜脚本工具，支持快速创建、编辑和管理分镜脚本。
 
 **在线体验：** [https://zstar1003.github.io/mediastory/](https://zstar1003.github.io/mediastory/)
+
+--- 
 
 ## 功能特性
 
@@ -49,20 +53,7 @@ npm run build
 npm run preview
 ```
 
-## 部署方式
 
-### GitHub Pages（推荐）
-
-本项目已配置 GitHub Actions 自动部署。每次推送到 `main` 分支时，会自动构建并部署到 GitHub Pages。
-
-部署步骤：
-1. Fork 或克隆本仓库
-2. 在仓库设置中启用 GitHub Pages（Settings > Pages > Source 选择 "GitHub Actions"）
-3. 推送代码到 `main` 分支即可自动部署
-
-### 云服务器部署
-
-如需使用多人协作功能，需要部署后端服务。详见 [阿里云部署指南](./docs/阿里云部署指南.md)。
 
 ## 项目结构
 
