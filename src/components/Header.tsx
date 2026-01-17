@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ChevronRight, Pencil, Download, Upload, Share2, Cloud, LogOut, User, Info } from 'lucide-react';
+import { ChevronRight, Pencil, Download, Upload, Share2, Cloud, LogOut, User, Info, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { useStoryboardStore } from '@/stores/storyboardStore';
 import { useCloudStore } from '@/stores/cloudStore';
-import { exportProject, importProject } from '@/utils/projectIO';
+import { exportProject, importProject, exportVideosAsZip } from '@/utils/projectIO';
 import logoImg from '/logo.png';
 
 // Logo 组件 - 完全静态
@@ -98,6 +98,7 @@ function HeaderActions() {
   const isInProject = currentProject !== null;
 
   const [featureDialogOpen, setFeatureDialogOpen] = useState(false);
+  const [isDownloadingVideos, setIsDownloadingVideos] = useState(false);
 
   // 导出项目
   const handleExport = () => {
@@ -121,6 +122,20 @@ function HeaderActions() {
     setFeatureDialogOpen(true);
   };
 
+  // 下载全部视频
+  const handleDownloadVideos = async () => {
+    if (!currentProject) return;
+    setIsDownloadingVideos(true);
+    try {
+      await useStoryboardStore.getState().save();
+      await exportVideosAsZip(currentProject);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '下载失败');
+    } finally {
+      setIsDownloadingVideos(false);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2">
       {/* 项目内操作 */}
@@ -139,6 +154,18 @@ function HeaderActions() {
           分享
         </Button>
 
+ 
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={handleDownloadVideos}
+          disabled={isDownloadingVideos}
+        >
+          <Video className="h-4 w-4 mr-1" />
+          {isDownloadingVideos ? '打包中...' : '批量下载视频'}
+        </Button>
+
         <Button
           variant="outline"
           size="sm"
@@ -148,6 +175,7 @@ function HeaderActions() {
           <Download className="h-4 w-4 mr-1" />
           导出
         </Button>
+
       </div>
 
       {/* 导入按钮 - 始终显示 */}
