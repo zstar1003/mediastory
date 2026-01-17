@@ -1,13 +1,18 @@
 import { useState, useCallback } from 'react';
-import { ChevronRight, Pencil, Download, Upload, Share2, Cloud, LogOut, User } from 'lucide-react';
+import { ChevronRight, Pencil, Download, Upload, Share2, Cloud, LogOut, User, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useStoryboardStore } from '@/stores/storyboardStore';
 import { useCloudStore } from '@/stores/cloudStore';
 import { exportProject, importProject } from '@/utils/projectIO';
-import { ShareDialog } from './ShareDialog';
-import { AuthDialog } from './AuthDialog';
-import * as api from '@/services/api';
 import logoImg from '/logo.png';
 
 // Logo 组件 - 完全静态
@@ -92,10 +97,7 @@ function HeaderActions() {
   const { user, isAuthenticated, logout } = useCloudStore();
   const isInProject = currentProject !== null;
 
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [authDialogOpen, setAuthDialogOpen] = useState(false);
-  const [cloudProjectId, setCloudProjectId] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [featureDialogOpen, setFeatureDialogOpen] = useState(false);
 
   // 导出项目
   const handleExport = () => {
@@ -114,31 +116,9 @@ function HeaderActions() {
     }
   };
 
-  // 分享项目
-  const handleShare = async () => {
-    if (!currentProject) return;
-
-    if (!isAuthenticated) {
-      setAuthDialogOpen(true);
-      return;
-    }
-
-    // 如果还没有云端项目ID，先上传
-    if (!cloudProjectId) {
-      setIsUploading(true);
-      try {
-        await useStoryboardStore.getState().save();
-        const result = await api.uploadProject(currentProject);
-        setCloudProjectId(result.id);
-        setShareDialogOpen(true);
-      } catch (error) {
-        alert(error instanceof Error ? error.message : '上传失败');
-      } finally {
-        setIsUploading(false);
-      }
-    } else {
-      setShareDialogOpen(true);
-    }
+  // 显示功能暂不支持提示
+  const handleFeatureNotSupported = () => {
+    setFeatureDialogOpen(true);
   };
 
   return (
@@ -153,11 +133,10 @@ function HeaderActions() {
           variant="outline"
           size="sm"
           className="cursor-pointer"
-          onClick={handleShare}
-          disabled={isUploading}
+          onClick={handleFeatureNotSupported}
         >
           <Share2 className="h-4 w-4 mr-1" />
-          {isUploading ? '上传中...' : '分享'}
+          分享
         </Button>
 
         <Button
@@ -206,20 +185,32 @@ function HeaderActions() {
           variant="outline"
           size="sm"
           className="cursor-pointer"
-          onClick={() => setAuthDialogOpen(true)}
+          onClick={handleFeatureNotSupported}
         >
           <Cloud className="h-4 w-4 mr-1" />
           登录
         </Button>
       )}
 
-      {/* 对话框 */}
-      <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
-      <ShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        projectId={cloudProjectId || ''}
-      />
+      {/* 功能暂不支持提示弹窗 */}
+      <Dialog open={featureDialogOpen} onOpenChange={setFeatureDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-blue-500" />
+              功能提示
+            </DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              暂不支持云同步和分享功能，敬请期待！
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setFeatureDialogOpen(false)}>
+              我知道了
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
