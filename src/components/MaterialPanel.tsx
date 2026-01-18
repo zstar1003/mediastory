@@ -4,6 +4,10 @@ import type { Material } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import {
   ChevronLeft,
   ChevronRight,
   Image,
@@ -54,9 +58,10 @@ interface MaterialDropZoneProps {
   type: 'image' | 'video';
   materials: Material[];
   onPreview: (image: string) => void;
+  onVideoPreview: (video: string) => void;
 }
 
-const MaterialDropZone = ({ type, materials, onPreview }: MaterialDropZoneProps) => {
+const MaterialDropZone = ({ type, materials, onPreview, onVideoPreview }: MaterialDropZoneProps) => {
   const { addMaterial, removeMaterial } = useStoryboardStore();
   const [isDragging, setIsDragging] = useState(false);
   const dragImageRef = useRef<HTMLDivElement>(null);
@@ -265,6 +270,7 @@ const MaterialDropZone = ({ type, materials, onPreview }: MaterialDropZoneProps)
                 className="relative group rounded-lg overflow-hidden border bg-muted cursor-grab active:cursor-grabbing"
                 draggable
                 onDragStart={(e) => handleVideoDragStart(e, material)}
+                onClick={() => onVideoPreview(material.data)}
               >
                 {thumbnail ? (
                   <div className="relative w-full aspect-video">
@@ -324,6 +330,7 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [videoPreviewSrc, setVideoPreviewSrc] = useState<string | null>(null);
 
   // 监听素材拖拽完成事件
   useEffect(() => {
@@ -433,11 +440,11 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
             </TabsList>
 
             <TabsContent value="image" className="flex-1 overflow-auto p-4 m-0">
-              <MaterialDropZone type="image" materials={imageMaterials} onPreview={onPreview} />
+              <MaterialDropZone type="image" materials={imageMaterials} onPreview={onPreview} onVideoPreview={setVideoPreviewSrc} />
             </TabsContent>
 
             <TabsContent value="video" className="flex-1 overflow-auto p-4 m-0">
-              <MaterialDropZone type="video" materials={videoMaterials} onPreview={onPreview} />
+              <MaterialDropZone type="video" materials={videoMaterials} onPreview={onPreview} onVideoPreview={setVideoPreviewSrc} />
             </TabsContent>
           </Tabs>
 
@@ -456,6 +463,20 @@ export const MaterialPanel = ({ onPreview }: MaterialPanelProps) => {
           onChange={handleFileSelect}
         />
       </div>
+
+      {/* 视频预览弹窗 */}
+      <Dialog open={!!videoPreviewSrc} onOpenChange={(open) => !open && setVideoPreviewSrc(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          {videoPreviewSrc && (
+            <video
+              src={videoPreviewSrc}
+              controls
+              autoPlay
+              className="w-full max-h-[80vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
